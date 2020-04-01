@@ -14,6 +14,7 @@ import logging
 import os
 import sys
 from collections import OrderedDict
+import time
 import torch
 from fvcore.common.file_io import PathManager
 from fvcore.nn.precise_bn import get_bn_modules
@@ -34,6 +35,7 @@ from detectron2.evaluation import (
 )
 from detectron2.modeling import build_model
 from detectron2.solver import build_lr_scheduler, build_optimizer
+from detectron2.structures import ImageList
 from detectron2.utils import comm
 from detectron2.utils.collect_env import collect_env_info
 from detectron2.utils.env import seed_all_rng
@@ -43,7 +45,7 @@ from detectron2.utils.logger import setup_logger
 from . import hooks
 from .train_loop import SimpleTrainer
 
-__all__ = ["default_argument_parser", "default_setup", "DefaultPredictor", "DefaultTrainer"]
+__all__ = ["default_argument_parser", "default_setup", "DefaultPredictor", "DefaultTrainer", "BatchPredictor"]
 
 
 def default_argument_parser():
@@ -196,6 +198,91 @@ class DefaultPredictor:
             inputs = {"image": image, "height": height, "width": width}
             predictions = self.model([inputs])[0]
             return predictions
+
+class BatchPredictor:
+    """
+    Create a simple end-to-end predictor with the given config that runs on
+    single device for a single input image.
+
+    Compared to using the model directly, this class does the following additions:
+
+    1. Load checkpoint from `cfg.MODEL.WEIGHTS`.
+    2. Always take BGR image as the input and apply conversion defined by `cfg.INPUT.FORMAT`.
+    3. Apply resizing defined by `cfg.INPUT.{MIN,MAX}_SIZE_TEST`.
+    4. Take one input image and produce a single output, instead of a batch.
+
+    If you'd like to do anything more fancy, please refer to its source code
+    as examples to build and use the model manually.
+
+    Attributes:
+        metadata (Metadata): the metadata of the underlying dataset, obtained from
+            cfg.DATASETS.TEST.
+
+    Examples:
+
+    .. code-block:: python
+
+        pred = DefaultPredictor(cfg)
+        inputs = cv2.imread("input.jpg")
+        outputs = pred(inputs)
+    """
+
+    def __init__(self, cfg):
+        self.cfg = cfg.clone()  # cfg can be modified by model
+        self.model = build_model(self.cfg)
+        self.model.eval()
+        self.metadata = MetadataCatalog.get(cfg.DATASETS.TEST[0])
+
+        checkpointer = DetectionCheckpointer(self.model)
+        checkpointer.load(cfg.MODEL.WEIGHTS)
+
+        self.transform_gen = T.ResizeShortestEdge(
+            [cfg.INPUT.MIN_SIZE_TEST, cfg.INPUT.MIN_SIZE_TEST], cfg.INPUT.MAX_SIZE_TEST
+        )
+
+        self.input_format = cfg.INPUT.FORMAT
+        assert self.input_format in ["RGB", "BGR"], self.input_format
+
+    def __call__(self, original_image, n):
+        """
+        Args:
+            original_image (np.ndarray): an image of shape (H, W, C) (in BGR order).
+
+        Returns:
+            predictions (dict):
+                the output of the model for one image only.
+                See :doc:`/tutorials/models` for details about the format.
+        """
+        with torch.no_grad():  # https://github.com/sphinx-doc/sphinx/issues/4258
+            # Apply pre-processing to image.
+            if self.input_format == "RGB":
+                # whether the model expects BGR inputs or RGB
+                original_image = original_image[:, :, ::-1]
+            height, width = original_image.shape[:2]
+            image = self.transform_gen.get_transform(original_image).apply_image(original_image)
+            image = torch.as_tensor(image.astype("float32").transpose(2, 0, 1))
+            print(image.shape)
+            images = ImageList.from_tensors([image for i in range(n)], size_divisibility=32)
+            images = images.to(self.cfg.MODEL.DEVICE)
+            t = time.time()
+            features = self.model.backbone(images.tensor)
+            f = time.time()
+            print("FEATURES", f - t)
+            proposals, _ = self.model.proposal_generator(images, features)
+            p = time.time()
+            print("PROPOSALS", p - f)
+            instances = self.model.roi_heads._forward_box(features, proposals)
+            i = time.time()
+            print("INSTANCES", i - p)
+            mask_features = [features[f] for f in self.model.roi_heads.in_features]
+            m = time.time()
+            print("MASK", m - i)
+            mask_features = self.model.roi_heads.mask_pooler(mask_features, [x.pred_boxes for x in instances])
+            mf = time.time()
+            print("MF", mf - m)
+            # predictions = self.model(inputs)
+            print(time.time() - t)
+            return mask_features
 
 
 class DefaultTrainer(SimpleTrainer):

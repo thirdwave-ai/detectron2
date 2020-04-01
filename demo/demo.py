@@ -76,7 +76,7 @@ if __name__ == "__main__":
 
     cfg = setup_cfg(args)
 
-    demo = VisualizationDemo(cfg)
+    demo = VisualizationDemo(cfg, batch=True)
 
     if args.input:
         if len(args.input) == 1:
@@ -86,7 +86,7 @@ if __name__ == "__main__":
             # use PIL, to be consistent with evaluation
             img = read_image(path, format="BGR")
             start_time = time.time()
-            predictions, visualized_output = demo.run_on_image(img)
+            predictions, visualized_output = demo.run_on_duplicated_images(img, 5)
             logger.info(
                 "{}: {} in {:.2f}s".format(
                     path,
