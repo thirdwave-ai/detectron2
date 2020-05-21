@@ -13,14 +13,16 @@ from detectron2.structures import Boxes, BoxMode, PolygonMasks
 
 from .. import DatasetCatalog, MetadataCatalog
 
+from twa.pallet_detection.proto_python_tools import read_proto
+
 """
-This file contains functions to parse TWA dataset directory into dicts in "Detectron2 format".
+This file contains functions to parse TWA dataset directory into dicts into "Detectron2 format".
 """
 
 
 logger = logging.getLogger(__name__)
 
-__all__ = ["load_coco_json", "load_sem_seg", "convert_to_coco_json"]
+__all__ = ["load_twa_directory"]
 
 def prep_merged_twa(merged_path):
     merged_description = read_proto(MergedDatasetDescriptionProto, merged_path)
@@ -58,12 +60,10 @@ def prep_standard_twa(dataset_directory):
     print("STD:", pixel_stdev)
     return category_to_id_map, classes, num_classes, pixel_mean, pixel_stdev
 
-def check_valid_label(path):
-    datum_proto = read_proto(DatumProto, path)
-    _, instance_mask, height, width = get_masks(datum_proto)
+def check_valid_label(instance_mask):
     unique_instances = np.unique(instance_mask)
     valid = len(unique_instances) > 1
-    return valid, height, width
+    return valid
 
 def get_masks(datum_proto):
     segmentation_mask = parse_image_field(datum_proto.segmentation_mask.png_data, cv2.IMREAD_GRAYSCALE)
@@ -78,6 +78,22 @@ def get_masks(datum_proto):
     # check that height and width or segmentation and instance masks are equal
     assert (height_seg == height_ins) and (width_seg == width_ins)
     return segmentation_mask, instance_mask, height_seg, width_seg
+
+def get_semantic_id(instance_mask, segmentation_mask, id_num):
+    segmentation_id_options = np.unique(segmentation_mask[instance_mask == id_num])
+    assert len(segmentation_id_options) == 1
+    segmentation_id = segmentation_id_options[0]
+    if segmentation_id == 0:
+        print("No segmentation. Something is not right!!")
+    return segmentation_id
+
+def lookup_merged_id(datum_relative_path, semantic_id, merged_description):
+    dataset_description = merged_description.dataset_descriptions[
+        merged_description.datum_to_description[datum_relative_path]
+    ]
+    class_name = dataset_description.class_id_to_name[semantic_id]
+    new_pixel = merged_description.class_name_to_id[class_name]
+    return new_pixel
 
 def load_twa_directory(dataset_directory, subset="train"):
     """
@@ -109,13 +125,36 @@ def load_twa_directory(dataset_directory, subset="train"):
         category_to_id_map, classes, num_classes, pixel_mean, pixel_stdev = prep_standard_twa(dataset_directory)
     potential_paths = sorted(glob.glob(os.path.join(dataset_directory, "protos", subset, "*.pb")))
     dataset_dicts = []
+    image_id = 0
     for path in tqdm.tqdm(potential_paths):
-        valid, height, width = check_valid_label(path)
-        if valid:
-            record = {}
+        datum_proto = read_proto(DatumProto, path)
+        segmentation_mask, instance_mask, height, width = get_masks(datum_proto)
+        objs = []
+        if check_valid_label(instance_mask):
+            for instance_id in np.unique(instance_mask):
+                if instance_id == 0:
+                    # No labels in this image, skipping.
+                    continue
+                semantic_id = get_semantic_id(instance_mask, segmentation_mask, id_num)
+                if merged_set:
+                    # We need to look up the correct class number in the merged dataset description proto.
+                    semantic_id = lookup_merged_id(path[len(dataset_directory):], semantic_id, merged_description)
+                px, py = np.where(instance_mask == instance_id)
+                poly = [(x + 0.5, y + 0.5) for x, y in zip(px, py)]
+                poly = [p for x in poly for p in x]
+                obj = {
+                    "category_id": semantic_id,
+                    "bbox": [np.min(px), np.min(py), np.max(px), np.max(py)]
+                    "bbox_mode": BoxMode.XYXY_ABS,
+                    "segmentation": [poly],
+                }
+                objs.append(obj)
             record["file_name"] = path
             record["height"] = height
             record["width"] = width
+            record["annotations"] = objs
+            record["image_id"] = image_id
+            image_id += 1
             dataset_dicts.append(record)
     print(f"Loaded {len(dataset_dicts)} images.")
     return dataset_dicts
