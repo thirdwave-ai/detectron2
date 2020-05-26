@@ -41,6 +41,9 @@ _C.MODEL.PIXEL_MEAN = [103.530, 116.280, 123.675]
 # Otherwise, you can use [57.375, 57.120, 58.395] (ImageNet std)
 _C.MODEL.PIXEL_STD = [1.0, 1.0, 1.0]
 
+# Configure the classes for the current training/test run.
+_C.CLASSES = ['__background__', 'pallet', 'payload', 'person', 'forklift', 'liftarea', 'fork', 'frontofpallet', 'rackface', 'rackupright']
+
 
 # -----------------------------------------------------------------------------
 # INPUT
