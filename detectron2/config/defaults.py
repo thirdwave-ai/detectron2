@@ -44,6 +44,7 @@ _C.MODEL.PIXEL_STD = [1.0, 1.0, 1.0]
 # Configure the classes for the current training/test run.
 _C.CLASSES = ['__background__', 'pallet', 'payload', 'person', 'forklift', 'liftarea', 'fork', 'frontofpallet', 'rackface', 'rackupright']
 
+_C.TWA_DIRECTORY = ""
 
 # -----------------------------------------------------------------------------
 # INPUT
