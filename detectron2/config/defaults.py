@@ -28,11 +28,12 @@ _C.VERSION = 2
 # Configure the classes for the current training/test run.
 _C.CLASSES = ['__background__', 'pallet', 'payload', 'person', 'forklift', 'liftarea', 'fork', 'frontofpallet', 'rackface', 'rackupright']
 
-# If using a TWA dataset, configure the TWA_DIRECTORY. This is a path relative to the directory on columbia where our datasets are stored: /columbia/MachineLearningAssets/labelbox/
-_C.TWA_DIRECTORY = ""
-_C.DATASET.DEBUG: True
-_C.DATASET.USE_BGR: True
-_C.DATASET.USE_DEPTH: True
+_C.TWA = CN()
+# If using a TWA dataset, configure the TWA.DATASET_DIRECTORY. This is a path relative to the directory on columbia where our datasets are stored: /columbia/MachineLearningAssets/labelbox/
+_C.TWA.DATASET_DIRECTORY = ""
+_C.TWA.DATASET.DEBUG: True
+_C.TWA.DATASET.USE_BGR: True
+_C.TWA.DATASET.USE_DEPTH: True
 
 # -----------------------------------------------------------------------------
 # END TWA FLAGS- These are flags we have added specific to TWA's use/ standardization.
@@ -57,6 +58,7 @@ _C.MODEL.PIXEL_MEAN = [103.530, 116.280, 123.675]
 # std has been absorbed into its conv1 weights, so the std needs to be set 1.
 # Otherwise, you can use [57.375, 57.120, 58.395] (ImageNet std)
 _C.MODEL.PIXEL_STD = [1.0, 1.0, 1.0]
+
 
 # -----------------------------------------------------------------------------
 # INPUT
