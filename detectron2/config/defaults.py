@@ -29,8 +29,9 @@ _C.VERSION = 2
 _C.CLASSES = ['__background__', 'pallet', 'payload', 'person', 'forklift', 'liftarea', 'fork', 'frontofpallet', 'rackface', 'rackupright']
 
 _C.TWA = CN()
+_C.TWA.DATASET = CN()
 # If using a TWA dataset, configure the TWA.DATASET_DIRECTORY. This is a path relative to the directory on columbia where our datasets are stored: /columbia/MachineLearningAssets/labelbox/
-_C.TWA.DATASET_DIRECTORY = ""
+_C.TWA.DATASET.DIRECTORY = ""
 _C.TWA.DATASET.DEBUG: True
 _C.TWA.DATASET.USE_BGR: True
 _C.TWA.DATASET.USE_DEPTH: True
