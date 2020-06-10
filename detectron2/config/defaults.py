@@ -35,6 +35,10 @@ _C.TWA.DATASET.DIRECTORY = ""
 _C.TWA.DATASET.DEBUG = True
 _C.TWA.DATASET.USE_BGR = True
 _C.TWA.DATASET.USE_DEPTH = True
+_C.TWA.MAX_DEPTH_MM = 30000
+_C.TWA.DATASET.AUGMENTATION = CN()
+_C.TWA.DATASET.AUGMENTATION.ROTATION = 15
+
 
 # -----------------------------------------------------------------------------
 # END TWA FLAGS- These are flags we have added specific to TWA's use/ standardization.
