@@ -5,8 +5,12 @@
     ```bash
     python3 setup.py sdist bdist_wheel
     ```
-1. Upload the dist folder via gsutil
+1. Outside docker upload the dist folder via gsutil:
     ```bash
     gsutil cp -r dist gs://twa-build-support/detectron_dist/$(date +"%Y_%m_%d")
+    ```
+1. Edit the url in the `thirdwave/detectron_requirements.in` file to point to the new path and re-generate the dependencies.
+    ```bash
+    /usr/local/bin/pip-compile-multi --no-upgrade --use-cache
     ```
 
