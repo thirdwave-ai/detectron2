@@ -9,7 +9,7 @@
     ```bash
     gsutil cp -r dist gs://twa-build-support/detectron_dist/$(date +"%Y_%m_%d")
     ```
-1. Edit the url in the `thirdwave/detectron_requirements.in` file to point to the new path and re-generate the dependencies.
+1. Edit the url in the `thirdwave/requirements/detectron_requirements.in` file to point to the new path and re-generate the dependencies.
     ```bash
     /usr/local/bin/pip-compile-multi --no-upgrade --use-cache
     ```
