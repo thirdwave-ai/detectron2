@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+# Copyright (c) Facebook, Inc. and its affiliates.
 import logging
 import numpy as np
 from typing import Optional, Tuple
@@ -189,7 +189,8 @@ class GeneralizedRCNN(nn.Module):
             do_postprocess (bool): whether to apply post-processing on the outputs.
 
         Returns:
-            same as in :meth:`forward`.
+            When do_postprocess=True, same as in :meth:`forward`.
+            Otherwise, a list[Instances] containing raw network outputs.
         """
         assert not self.training
 

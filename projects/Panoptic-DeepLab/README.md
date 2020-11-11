@@ -10,6 +10,7 @@ Bowen Cheng, Maxwell D. Collins, Yukun Zhu, Ting Liu, Thomas S. Huang, Hartwig A
 
 ## Installation
 Install Detectron2 following [the instructions](https://detectron2.readthedocs.io/tutorials/install.html).
+To use cityscapes, prepare data follow the [tutorial](https://detectron2.readthedocs.io/tutorials/builtin_datasets.html#expected-dataset-structure-for-cityscapes).
 
 ## Training
 
@@ -77,6 +78,9 @@ Note:
 - [R52](https://dl.fbaipublicfiles.com/detectron2/DeepLab/R-52.pkl): a ResNet-50 with its first 7x7 convolution replaced by 3 3x3 convolutions. This modification has been used in most semantic segmentation papers. We pre-train this backbone on ImageNet using the default recipe of [pytorch examples](https://github.com/pytorch/examples/tree/master/imagenet).
 - DC5 means using dilated convolution in `res5`.
 - We use a smaller training crop size (512x1024) than the original paper (1025x2049), we find using larger crop size (1024x2048) could further improve PQ by 1.5% but also degrades AP by 3%.
+- This implementation currently uses a much heavier head than the original paper.
+- This implementation does not include optimized post-processing code needed for deployment. Post-processing the network
+  outputs now takes more time than the network itself.
 
 ## <a name="CitingPanopticDeepLab"></a>Citing Panoptic-DeepLab
 

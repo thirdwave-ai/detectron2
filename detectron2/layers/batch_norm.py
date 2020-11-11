@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+# Copyright (c) Facebook, Inc. and its affiliates.
 import logging
 import torch
 import torch.distributed as dist
@@ -134,6 +134,8 @@ def get_norm(norm, out_channels):
     Returns:
         nn.Module or None: the normalization layer
     """
+    if norm is None:
+        return None
     if isinstance(norm, str):
         if len(norm) == 0:
             return None

@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+# Copyright (c) Facebook, Inc. and its affiliates.
 # -*- coding: utf-8 -*-
 
 import copy
@@ -8,13 +8,13 @@ import tempfile
 import unittest
 import cv2
 import torch
-from fvcore.common.file_io import PathManager
 
 from detectron2 import model_zoo
 from detectron2.checkpoint import DetectionCheckpointer
 from detectron2.config import get_cfg
 from detectron2.data import DatasetCatalog
 from detectron2.modeling import build_model
+from detectron2.utils.file_io import PathManager
 from detectron2.utils.logger import setup_logger
 
 
@@ -46,9 +46,11 @@ class TestCaffe2Export(unittest.TestCase):
     def _get_test_image(self):
         try:
             file_name = DatasetCatalog.get("coco_2017_train")[0]["file_name"]
-            assert PathManager.exists(file_name)
-        except Exception:
-            self.skipTest("COCO dataset not available.")
+            if not PathManager.exists(file_name):
+                raise FileNotFoundError()
+        except IOError:
+            # for public CI to run
+            file_name = "http://images.cocodataset.org/train2017/000000000009.jpg"
 
         with PathManager.open(file_name, "rb") as f:
             buf = f.read()

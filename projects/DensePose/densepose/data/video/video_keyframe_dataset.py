@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+# Copyright (c) Facebook, Inc. and its affiliates.
 
 import logging
 import numpy as np
 from typing import Callable, List, Optional
 import torch
-from fvcore.common.file_io import PathManager
 from torch.utils.data.dataset import Dataset
+
+from detectron2.utils.file_io import PathManager
 
 import av
 

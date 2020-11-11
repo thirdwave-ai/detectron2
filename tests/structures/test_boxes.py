@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+# Copyright (c) Facebook, Inc. and its affiliates.
 import json
 import math
 import numpy as np
@@ -188,12 +188,17 @@ class TestBoxes(unittest.TestCase):
         x = Boxes.cat([])
         self.assertTrue(x.tensor.shape, (0, 4))
 
+    def test_to(self):
+        x = Boxes(torch.rand(3, 4))
+        self.assertEqual(x.to(device="cpu").tensor.device.type, "cpu")
+
     # require https://github.com/pytorch/pytorch/pull/39821
     @unittest.skipIf(TORCH_VERSION < (1, 6), "Insufficient pytorch version")
     def test_scriptability(self):
         def func(x):
             boxes = Boxes(x)
-            return boxes.area()
+            test = boxes.to(torch.device("cpu")).tensor
+            return boxes.area(), test
 
         f = torch.jit.script(func)
         f(torch.rand((3, 4)))
