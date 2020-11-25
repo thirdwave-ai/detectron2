@@ -1,13 +1,13 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
+# Copyright (c) Facebook, Inc. and its affiliates.
 import copy
 import logging
 import os
 import torch
 from caffe2.proto import caffe2_pb2
-from fvcore.common.file_io import PathManager
 from torch import nn
 
 from detectron2.config import CfgNode as CN
+from detectron2.utils.file_io import PathManager
 
 from .caffe2_inference import ProtobufDetectionModel
 from .caffe2_modeling import META_ARCH_CAFFE2_EXPORT_TYPE_MAP, convert_batched_inputs_to_c2_format
@@ -140,7 +140,7 @@ class Caffe2Tracer:
         logger = logging.getLogger(__name__)
         logger.info("Tracing the model with torch.jit.trace ...")
         with torch.no_grad():
-            return torch.jit.trace(model, (inputs,), optimize=True)
+            return torch.jit.trace(model, (inputs,))
 
 
 def export_caffe2_model(cfg, model, inputs):
@@ -187,6 +187,13 @@ def export_onnx_model(cfg, model, inputs):
 class Caffe2Model(nn.Module):
     """
     A wrapper around the traced model in caffe2's pb format.
+
+    Examples:
+    ::
+        model = Caffe2Model.load_protobuf("dir/with/pb/files")
+        inputs = [{"image": img_tensor_CHW}]
+        outputs = model(inputs)
+
     """
 
     def __init__(self, predict_net, init_net):
@@ -195,6 +202,8 @@ class Caffe2Model(nn.Module):
         self._predict_net = predict_net
         self._init_net = init_net
         self._predictor = None
+
+    __init__.__HIDE_SPHINX_DOC__ = True
 
     @property
     def predict_net(self):
@@ -211,8 +220,6 @@ class Caffe2Model(nn.Module):
             core.Net: the underlying caffe2 init net
         """
         return self._init_net
-
-    __init__.__HIDE_SPHINX_DOC__ = True
 
     def save_protobuf(self, output_dir):
         """
@@ -279,11 +286,12 @@ class Caffe2Model(nn.Module):
     def __call__(self, inputs):
         """
         An interface that wraps around a caffe2 model and mimics detectron2's models'
-        input & output format. This is used to compare the outputs of caffe2 model
-        with its original torch model.
+        input/output format. See details about the format at :doc:`/tutorials/models`.
+        This is used to compare the outputs of caffe2 model with its original torch model.
 
-        Due to the extra conversion between torch/caffe2,
-        this method is not meant for benchmark.
+        Due to the extra conversion between torch/caffe2, this method is not meant for
+        benchmark. Because of the conversion, this method also has dependency
+        on detectron2 in order to convert to detectron2's output format.
         """
         if self._predictor is None:
             self._predictor = ProtobufDetectionModel(self._predict_net, self._init_net)
