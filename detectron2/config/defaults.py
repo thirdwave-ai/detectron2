@@ -58,6 +58,7 @@ _C.TWA.CLASS_THRESHOLDS.fork = 0.5
 _C.TWA.CLASS_THRESHOLDS.frontofpallet = 0.5
 _C.TWA.CLASS_THRESHOLDS.rackface = 0.5
 _C.TWA.CLASS_THRESHOLDS.rackupright = 0.5
+_C.TWA.CLASS_THRESHOLDS.centerliftarea = 0.5
 
 _C.TWA.FINAL_WEIGHTS_PATH = ""
 

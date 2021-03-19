@@ -14,6 +14,9 @@
     /usr/local/bin/pip-compile-multi --no-upgrade --use-cache
     ```
 
+# Steps to adding a new config variable
+1. Edit [detectron2/config/defaults.py](detectron2/config/defaults.py) and add a new config variable.
+1. Build and push a new wheel.
 
 <img src=".github/Detectron2-Logo-Horz.svg" width="300" >
 
