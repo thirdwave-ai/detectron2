@@ -26,7 +26,7 @@ _C.VERSION = 2
 # TWA FLAGS- These are flags we have added specific to TWA's use/ standardization.
 # -----------------------------------------------------------------------------
 # Configure the classes for the current training/test run.
-_C.CLASSES = ['__background__', 'pallet', 'payload', 'person', 'forklift', 'liftarea', 'fork', 'frontofpallet', 'rackface', 'rackupright']
+_C.CLASSES = ['__background__', 'pallet', 'payload', 'person', 'forklift', 'liftarea', 'fork', 'frontofpallet', 'rackface', 'rackupright', 'centerliftarea']
 
 _C.TWA = CN()
 _C.TWA.DATASET = CN()
@@ -61,6 +61,7 @@ _C.TWA.CLASS_THRESHOLDS.rackupright = 0.5
 _C.TWA.CLASS_THRESHOLDS.centerliftarea = 0.5
 
 _C.TWA.FINAL_WEIGHTS_PATH = ""
+_C.TWA.LOCAL_WEIGHTS_PATH = ""
 
 # -----------------------------------------------------------------------------
 # END TWA FLAGS- These are flags we have added specific to TWA's use/ standardization.
