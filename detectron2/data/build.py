@@ -252,7 +252,7 @@ def get_detection_dataset_dicts(
 
 
 def build_batch_data_loader(
-    dataset, sampler, total_batch_size, *, aspect_ratio_grouping=False, num_workers=0
+    dataset, sampler, total_batch_size, *, aspect_ratio_grouping=False, num_workers=0, prefetch_factor=2
 ):
     """
     Build a batched dataloader for training.
@@ -260,7 +260,7 @@ def build_batch_data_loader(
     Args:
         dataset (torch.utils.data.Dataset): map-style PyTorch dataset. Can be indexed.
         sampler (torch.utils.data.sampler.Sampler): a sampler that produces indices
-        total_batch_size, aspect_ratio_grouping, num_workers): see
+        total_batch_size, aspect_ratio_grouping, num_workers, prefetch_factor): see
             :func:`build_detection_train_loader`.
 
     Returns:
@@ -283,7 +283,10 @@ def build_batch_data_loader(
             batch_sampler=None,
             collate_fn=operator.itemgetter(0),  # don't batch, but yield individual elements
             worker_init_fn=worker_init_reset_seed,
-        )  # yield individual mapped dict
+            prefetch_factor=prefetch_factor,
+            persistent_workers=True,
+            pin_memory=True,
+    )  # yield individual mapped dict
         return AspectRatioGroupedDataset(data_loader, batch_size)
     else:
         batch_sampler = torch.utils.data.sampler.BatchSampler(
@@ -295,6 +298,9 @@ def build_batch_data_loader(
             batch_sampler=batch_sampler,
             collate_fn=trivial_batch_collator,
             worker_init_fn=worker_init_reset_seed,
+            prefetch_factor=prefetch_factor,
+            persistent_workers=True,
+            pin_memory=True,
         )
 
 
@@ -333,13 +339,14 @@ def _train_loader_from_config(cfg, *, mapper=None, dataset=None, sampler=None):
         "total_batch_size": cfg.SOLVER.IMS_PER_BATCH,
         "aspect_ratio_grouping": cfg.DATALOADER.ASPECT_RATIO_GROUPING,
         "num_workers": cfg.DATALOADER.NUM_WORKERS,
+        "prefetch_factor": cfg.DATALOADER.PREFETCH_FACTOR,
     }
 
 
 # TODO can allow dataset as an iterable or IterableDataset to make this function more general
 @configurable(from_config=_train_loader_from_config)
 def build_detection_train_loader(
-    dataset, *, mapper, sampler=None, total_batch_size, aspect_ratio_grouping=True, num_workers=0
+    dataset, *, mapper, sampler=None, total_batch_size, aspect_ratio_grouping=True, num_workers=0, prefetch_factor=2
 ):
     """
     Build a dataloader for object detection with some default features.
@@ -362,6 +369,7 @@ def build_detection_train_loader(
             aspect ratio for efficiency. When enabled, it requires each
             element in dataset be a dict with keys "width" and "height".
         num_workers (int): number of parallel data loading workers
+        prefetch_factor (int): num to prefetch
 
     Returns:
         torch.utils.data.DataLoader: a dataloader. Each output from it is a
@@ -381,6 +389,7 @@ def build_detection_train_loader(
         total_batch_size,
         aspect_ratio_grouping=aspect_ratio_grouping,
         num_workers=num_workers,
+        prefetch_factor=prefetch_factor,
     )
 
 
@@ -400,11 +409,11 @@ def _test_loader_from_config(cfg, dataset_name, mapper=None):
     )
     if mapper is None:
         mapper = DatasetMapper(cfg, False)
-    return {"dataset": dataset, "mapper": mapper, "num_workers": cfg.DATALOADER.NUM_WORKERS}
+    return {"dataset": dataset, "mapper": mapper, "num_workers": cfg.DATALOADER.NUM_WORKERS, "prefetch_factor": cfg.DATALOADER.PREFETCH_FACTOR}
 
 
 @configurable(from_config=_test_loader_from_config)
-def build_detection_test_loader(dataset, *, mapper, num_workers=0):
+def build_detection_test_loader(dataset, *, mapper, num_workers=0, prefetch_factor=2):
     """
     Similar to `build_detection_train_loader`, but uses a batch size of 1.
     This interface is experimental.
@@ -417,6 +426,7 @@ def build_detection_test_loader(dataset, *, mapper, num_workers=0):
            and returns the format to be consumed by the model.
            When using cfg, the default choice is ``DatasetMapper(cfg, is_train=False)``.
         num_workers (int): number of parallel data loading workers
+        prefetch_factor (int)
 
     Returns:
         DataLoader: a torch DataLoader, that loads the given detection
@@ -442,6 +452,7 @@ def build_detection_test_loader(dataset, *, mapper, num_workers=0):
     data_loader = torch.utils.data.DataLoader(
         dataset,
         num_workers=num_workers,
+        prefetch_factor=prefetch_factor,
         batch_sampler=batch_sampler,
         collate_fn=trivial_batch_collator,
     )
