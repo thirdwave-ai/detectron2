@@ -158,6 +158,7 @@ _C.DATASETS.PRECOMPUTED_PROPOSAL_TOPK_TEST = 1000
 _C.DATALOADER = CN()
 # Number of data loading threads
 _C.DATALOADER.NUM_WORKERS = 4
+_C.DATALOADER.PREFETCH_FACTOR = 2
 # If True, each batch should contain only images for which the aspect ratio
 # is compatible. This groups portrait images together, and landscape images
 # are not batched with portrait images.
