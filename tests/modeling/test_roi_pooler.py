@@ -5,7 +5,6 @@ import torch
 
 from detectron2.modeling.poolers import ROIPooler, _fmt_box_list
 from detectron2.structures import Boxes, RotatedBoxes
-from detectron2.utils.env import TORCH_VERSION
 from detectron2.utils.testing import random_boxes
 
 logger = logging.getLogger(__name__)
@@ -98,11 +97,9 @@ class TestROIPooler(unittest.TestCase):
         scripted_roialignv2_out = torch.jit.script(roialignv2_pooler)(features, rois)
         self.assertTrue(torch.equal(roialignv2_out, scripted_roialignv2_out))
 
-    @unittest.skipIf(TORCH_VERSION < (1, 7), "Insufficient pytorch version")
     def test_scriptability_cpu(self):
         self._test_scriptability(device="cpu")
 
-    @unittest.skipIf(TORCH_VERSION < (1, 7), "Insufficient pytorch version")
     @unittest.skipIf(not torch.cuda.is_available(), "CUDA not available")
     def test_scriptability_gpu(self):
         self._test_scriptability(device="cuda")
@@ -117,7 +114,6 @@ class TestROIPooler(unittest.TestCase):
         output = pooler.forward(features, [])
         self.assertEqual(output.shape, (0, C, 14, 14))
 
-    @unittest.skipIf(TORCH_VERSION < (1, 6), "Insufficient pytorch version")
     def test_fmt_box_list_tracing(self):
         class Model(torch.nn.Module):
             def forward(self, box_tensor):
@@ -130,7 +126,6 @@ class TestROIPooler(unittest.TestCase):
             self.assertEqual(func(torch.ones(5, 4)).shape, (5, 5))
             self.assertEqual(func(torch.ones(20, 4)).shape, (20, 5))
 
-    @unittest.skipIf(TORCH_VERSION < (1, 6), "Insufficient pytorch version")
     def test_roi_pooler_tracing(self):
         class Model(torch.nn.Module):
             def __init__(self, roi):
@@ -154,6 +149,10 @@ class TestROIPooler(unittest.TestCase):
         feature = [feature, feature]
 
         rois = random_boxes(N_rois, W * canonical_scale_factor)
+        # Add one larger box so that this level has only one box.
+        # This may trigger the bug https://github.com/pytorch/pytorch/issues/49852
+        # that we shall workaround.
+        rois = torch.cat([rois, torch.tensor([[0, 0, 448, 448]])])
 
         model = Model(
             ROIPooler(
@@ -167,7 +166,7 @@ class TestROIPooler(unittest.TestCase):
         with torch.no_grad():
             func = torch.jit.trace(model, (feature, rois))
             o = func(feature, rois)
-            self.assertEqual(o.shape, (10, 4, 14, 14))
+            self.assertEqual(o.shape, (11, 4, 14, 14))
             o = func(feature, rois[:5])
             self.assertEqual(o.shape, (5, 4, 14, 14))
             o = func(feature, random_boxes(20, W * canonical_scale_factor))

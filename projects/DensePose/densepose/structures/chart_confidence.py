@@ -37,7 +37,7 @@ def decorate_predictor_output_class_with_confidences(BasePredictorOutput: type) 
 
     PredictorOutput = make_dataclass(
         BasePredictorOutput.__name__ + "WithConfidences",
-        fields=[
+        fields=[  # pyre-ignore[6]
             ("sigma_1", Optional[torch.Tensor], None),
             ("sigma_2", Optional[torch.Tensor], None),
             ("kappa_u", Optional[torch.Tensor], None),
@@ -71,21 +71,19 @@ def decorate_predictor_output_class_with_confidences(BasePredictorOutput: type) 
         )
 
     PredictorOutput.__getitem__ = PredictorOutput_getitem
-    return PredictorOutput
 
     def PredictorOutput_to(self, device: torch.device):
         """
         Transfers all tensors to the given device
         """
         PredictorOutput = type(self)
-        base_predictor_output_to = super(PredictorOutput, self).to(device)
+        base_predictor_output_to = super(PredictorOutput, self).to(device)  # pyre-ignore[16]
 
         def to_device_if_tensor(var: Any):
             if isinstance(var, torch.Tensor):
                 return var.to(device)
             return var
 
-        PredictorOutput.to = PredictorOutput_to
         return PredictorOutput(
             **base_predictor_output_to.__dict__,
             sigma_1=to_device_if_tensor(self.sigma_1),
@@ -95,3 +93,6 @@ def decorate_predictor_output_class_with_confidences(BasePredictorOutput: type) 
             fine_segm_confidence=to_device_if_tensor(self.fine_segm_confidence),
             coarse_segm_confidence=to_device_if_tensor(self.coarse_segm_confidence),
         )
+
+    PredictorOutput.to = PredictorOutput_to
+    return PredictorOutput
