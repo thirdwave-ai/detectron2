@@ -416,11 +416,11 @@ def _test_loader_from_config(cfg, dataset_name, mapper=None):
     )
     if mapper is None:
         mapper = DatasetMapper(cfg, False)
-    return {"dataset": dataset, "mapper": mapper, "num_workers": cfg.DATALOADER.NUM_WORKERS}
+    return {"dataset": dataset, "mapper": mapper, "num_workers": cfg.DATALOADER.NUM_WORKERS, "prefetch_factor": cfg.DATALOADER.PREFETCH_FACTOR}
 
 
 @configurable(from_config=_test_loader_from_config)
-def build_detection_test_loader(dataset, *, mapper, sampler=None, num_workers=0):
+def build_detection_test_loader(dataset, *, mapper, sampler=None, num_workers=0, prefetch_factor=2):
     """
     Similar to `build_detection_train_loader`, but uses a batch size of 1,
     and :class:`InferenceSampler`. This sampler coordinates all workers to
